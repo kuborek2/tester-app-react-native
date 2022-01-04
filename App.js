@@ -6,7 +6,7 @@
  * @flow strict-local
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -23,6 +23,7 @@ import {
   ToastAndroid,
   FlatList,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 
 import {
@@ -36,40 +37,63 @@ import { Link, NavigationContainer } from '@react-navigation/native';
 // import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { cloneNode, isTSEntityName, whileStatement } from '@babel/types';
-import { withDecay } from 'react-native-reanimated';
+// import { cloneNode, isTSEntityName, whileStatement } from '@babel/types';
+// import { withDecay } from 'react-native-reanimated';
 import RNBootSplash from "react-native-bootsplash";
-import CountDown from 'react-native-countdown-component';
+// import CountDown from 'react-native-countdown-component';
+import Moment from 'moment';
+import QuizTest from './QuizTest.js'
+import { onChange } from 'react-native-reanimated';
+import _ from 'lodash';
 // import { results, pushToResults} from 'global';
 
 const App = () => {
 
   type hide = (config?: { fade?: boolean }) => Promise<void>;
 
-  const [nick, onChangeNick] = React.useState('');
 
+  // Hook for holding nick value
+  const [nick, onChangeNick] = React.useState('');
+  // Hook for holding date of last app data update
+  const [isUpdated, setIsUpdated] = useState("");
+  
+  // Show Toast function
   const showToast = (message) => {
     ToastAndroid.show(message, ToastAndroid.SHORT);
   };
 
+  const [isTermsChecked, setIsTermsChecked] = React.useState(false);
+
+  /**
+   * Checks if app should show a user terms of usage screen or not
+   * @returns bool
+   */
   const checkTermsScreen = async () => {
-    try {
-      const value = await AsyncStorage.getItem('@storage_Key')
-      if ( value == null )
-        return false
-      else if ( value == 'terms_accepted' )
-        return true
-    } catch (e) {
-      Alert.alert('Error occured, '+e)
+    if( !isTermsChecked ){
+      console.log("xd")
+      try {
+        const value = await AsyncStorage.getItem('@first_start_key')
+        const nickkey = await AsyncStorage.getItem('@nick_key')
+        onChangeNick(nickkey);
+        if ( value === null )
+          onChangeTerms(false)
+        else if ( value == 'terms_accepted' )
+        onChangeTerms(true)
+        else
+          console.log(value)
+      } catch (e) {
+        Alert.alert('Error occured, '+e)
+      }
+      setIsTermsChecked(true);
     }
   }
-
+  // Hook that is used to hold value of checkTermsScreen value
   const [canIskipTermsOfUsage, onChangeTerms] = React.useState(checkTermsScreen());
 
+  // Async storage function that stores user nick value and canIskipTermsOfusage value 
   const storeData = async () => {
     try {
-      const value = await AsyncStorage.getItem('@storage_Key')
-      if ( value == null && nick != '' ){
+      if ( nick != '' ){
         await AsyncStorage.setItem('@first_start_key', 'terms_accepted')
         await AsyncStorage.setItem('@nick_key', nick)
       } else if (nick == ''){
@@ -137,40 +161,40 @@ const App = () => {
     ]
   }
 
-  const testList = [
-    {testKey: "test1", label: "Test label 1", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
-    "Etiam sodales convallis fringilla. Suspendisse porttitor dolor ante, "+
-    "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
-    "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
-    {testKey: "test2", label: "Test label 2", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
-    "Etiam sodales convallis fringilla. Suspendisse porttitor dolor ante, "+
-    "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
-    "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
-    {testKey: "test3", label: "Test label 3", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
-    "Etiam sodales convallisś fringilla. Suspendisse porttitor dolor ante, "+
-    "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
-    "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
-  ]
+  // const testList = [
+  //   {testKey: "test1", label: "Test label 1", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
+  //   "Etiam sodales convallis fringilla. Suspendisse porttitor dolor ante, "+
+  //   "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
+  //   "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
+  //   {testKey: "test2", label: "Test label 2", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
+  //   "Etiam sodales convallis fringilla. Suspendisse porttitor dolor ante, "+
+  //   "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
+  //   "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
+  //   {testKey: "test3", label: "Test label 3", tagList: ["tag1", "tag2"], desc: "Lorem ipsum dolor sit amet, consectetur adipiscing elit"+
+  //   "Etiam sodales convallisś fringilla. Suspendisse porttitor dolor ante, "+
+  //   "id faucibus tortor viverra vel. Vestibulum tempus sed quam a porta."+
+  //   "Suspendisse vel risus nibh. Nullam venenatis feugiat lacus, et tempus enim. Cras eget"},
+  // ]
 
-  const [results, onChangeResults] = React.useState([{
-    "nick": "Nick",
-    "score": "Score",
-    "total": "Total",
-    "type": "Type",
-    "date": "Date" }, 
-    {
-    "nick": "Marek",
-    "score": 18,
-    "total": 20,
-    "type": "history",
-    "date": "2018-11-12"}, 
-    {
-    "nick": "Robert",
-    "score": 12,
-    "total": 20,
-    "type": "Math",
-    "date": "2018-10-11"
-    }]);
+  // const [results, onChangeResults] = React.useState([{
+  //   "nick": "Nick",
+  //   "score": "Score",
+  //   "total": "Total",
+  //   "type": "Type",
+  //   "date": "Date" }, 
+  //   {
+  //   "nick": "Marek",
+  //   "score": 18,
+  //   "total": 20,
+  //   "type": "history",
+  //   "date": "2018-11-12"}, 
+  //   {
+  //   "nick": "Robert",
+  //   "score": 12,
+  //   "total": 20,
+  //   "type": "Math",
+  //   "date": "2018-10-11"
+  //   }]);
 
   // let results = [{
   //   "nick": "Nick",
@@ -201,162 +225,62 @@ const App = () => {
     return tagsLayout
   }
 
+  const generateTagsString = ( tagsArray ) => {
+    let string = '';
+    tagsArray.map( function(tagElement) {
+      string = string +" "+ tagElement
+    } )
+    return string
+  }
+
   // ------------------------------------- Test Screen --------------------------------
 
-  const TestQuestion = (props) => {
-    return (
-      <View>
-        <View style={styles.testQuestionBox}>
-          <Text style={styles.testQeustionText}>
-            {props.questionContent}
-          </Text>
-        
-        {/* <View style={styles.testTimerRoundBox}> */}
-          {/* <Text style={styles.testTimertext}>
-            {timer}
-          </Text> */}
-          {/* <View style={styles.testTimerRoundBox}>
-            <CountDown
-              until={5}
-              onFinish={() => changeTestQuestion()}
-              onPress={() => alert('hello')}
-              size={20}
-              timeToShow={['S']}
-              timeLabels={{s: ''}}
-            />
-          </View> */}
-        {/* </View> */}
-        </View>
-      </View>
-    )
-  }
-  const [questionIndex, onChangeQuestionIndex] = React.useState(0);
-  const [testScore, onChangeTestScore] = React.useState(0);
-
-  const resetQuestionIndex = () =>{
-    onChangeQuestionIndex(0);
-  }
-
-  const resetTestScore= () =>{
-    onChangeTestScore(0);
-  }
-
-  const changeTestQuestion = (testObj, isCorrect, navigation) => {
-    if ( testObj != null && testObj.tasks.length > questionIndex+1 ){
-      onChangeQuestionIndex(questionIndex+1)
-      if(isCorrect) onChangeTestScore(testScore+1)
-    } else if ( testObj.tasks.length <= questionIndex+1 ){
-      Alert.alert(
-        'Test skonczony',
-        'Twoj wynik to: '+testScore+" na: "+testObj.tasks.length,
-        [        
-          {text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
-          {text: 'OK', onPress: () => console.log('OK Pressed')},
-        ],
-        { cancelable: false }
-      )
-
-      let today = new Date();
-      let dd = String(today.getDate()).padStart(2, '0');
-      let mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
-      let yyyy = today.getFullYear();
-
-      today = yyyy + '-' + mm + '-' + dd;
-
-      results.push({
-        "nick": nick,
-        "score": testScore,
-        "total": testObj.tasks.length,
-        "type": "Math",
-        "date": today,
-        })
-      onChangeResults(results)
-
-      resetQuestionIndex()
-      resetTestScore()
-
-      navigation.navigate("Home")
-    } else if ( testObj == null)
-      Alert.alert(
-        'Alert Title',
-        'change question error occured, testObj is null',
-        [        
-          {text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
-          {text: 'OK', onPress: () => console.log('OK Pressed')},
-        ],
-        { cancelable: false }
-      )
-    else 
-      Alert.alert(
-        'Alert Title',
-        'change question error occured',
-        [        
-          {text: 'Cancel', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
-          {text: 'OK', onPress: () => console.log('OK Pressed')},
-        ],
-        { cancelable: false }
-      )
-  }
-
   const TestScreen = ({route, navigation}) => {
-    
-    const { testId } = route.params;
-    let testObj
-    if( JSON.stringify(testId) == "21" )
-      testObj = testOneTab
-
-    questionObj = testObj.tasks[questionIndex]
-
-    const answerLabelTabel = ["A: ","B: ","C: ", "D: "]
-    const answersBody = questionObj.answers.map( function(answerObj, index){
-      return (
-        <TouchableOpacity
-          key={index}
-          style={styles.testAnswerBox}
-          onPress={() => changeTestQuestion(testObj, answerObj.isCorrect, navigation)}>
-          <Text style={styles.testAnswerText}>
-            {answerLabelTabel[index]+answerObj.content}
-          </Text>
-        </TouchableOpacity>
-      )
-    } )
-
-    return (
-      <View style={styles.testScreenContainer}>
-        <TestQuestion 
-          questionContent={questionObj.question}
-          timerVariable={questionObj.duration}
-        />
-        {answersBody}
-      </View>
-    )
+    const { testId, tags } = route.params;
+    console.log("paramsy z testScreenu: "+route+"\n", navigation+"\n", testId+"\n tags: ", JSON.stringify(tags), "\n nick: ", nick)
+    return(
+      <QuizTest navigation={navigation} route={route} testId={testId} nick={nick} tags={tags}/>
+    );
   }
 
-  const testHandler = ({route}) => {
-    const { testId } = route.params;
-    let testObj
-    if( JSON.stringify(testId) == "21" )
-      testObj = testOneTab
-    resetQuestionIndex()
-    return TestScreen(testObj.tasks[questionIndex])
-  }
-
+  // _.shuffle
+  
   // ------------------------------------- HOME Screen --------------------------------
 
-  const HomeScreen = ({ navigation: { navigate }, route: {route} }) => {
+  const [isLoadingHome, setLoadingHome] = useState(true);
+  const [testList, setTestList] = useState([]);
+
+  const getTests = async () => {
+    try {
+      // setLoadingHome(true);
+      const response = await fetch('https://tgryl.pl/quiz/tests');
+      const json = await response.json();
+      setTestList(_.shuffle(json));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      // setLoadingHome(false);
+    }
+  }
+
+  const HomeScreen = ({ navigation, route: {route} }) => {
 
     const layout = testList.map( function(testElment) {
       return (
         <TouchableOpacity
-          key={testElment.testKey}
-          style={styles.elementScrollView}>
-            <Text style={styles.testTitleText}>{testElment.label}</Text>
+          key={testElment.id}
+          style={styles.elementScrollView}
+          onPress={() => {
+            // Navigate using the `navigation` prop that you received
+            navigation.navigate('Test', {testId: testElment.id, navigation: navigation, route: route});
+          }}>
+            <Text style={styles.testTitleText}>{testElment.name}</Text>
             <View style={null}>
               <Text style={styles.tagText}>
-                {generateTags(testElment.tagList)}
+                {generateTags(testElment.tags)}
               </Text>
             </View>
-          <Text style={null}>{testElment.desc}</Text>
+          <Text style={null}>{testElment.description}</Text>
         </TouchableOpacity>
       );
     })
@@ -380,11 +304,8 @@ const App = () => {
   // ----------------------------------- Result Screeen ------------------------------------------
 
   const [refreshing, setRefreshing] = React.useState(false);
-
-  const onRefresh = React.useCallback(() => {
-    setRefreshing(true);
-    setTimeout(function(){setRefreshing(false)} , 3000) ;
-  }, []);
+  const [isLoadingResults, setLoadingResults] = useState(true);
+  const [results, setResults] = useState([]);
 
   const firstResultRow = [{
     "nick": "Nick",
@@ -393,6 +314,30 @@ const App = () => {
     "type": "Type",
     "date": "Date"
     }]
+
+  const getResults = async () => {
+     try {
+      setLoadingResults(true);
+      const response = await fetch('https://tgryl.pl/quiz/results');
+      const json = await response.json();
+      setResults(json);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoadingResults(false);
+    }
+  }
+
+  useEffect(() => {
+    getResults();
+    getTests();
+  }, []);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    getResults();
+    setRefreshing(false)
+  }, []);
 
   const Item = ({item}) => (
     <View style={styles.resultItem}>
@@ -413,25 +358,27 @@ const App = () => {
         <Item item={item.score}></Item>
         <Item item={item.total}></Item>
         <Item item={item.type}></Item>
-        <Item item={item.date}></Item></View>
+        <Item item={Moment(item.createdOn).format('DD-MM-YYYY')}></Item></View>
       );
   };
 
+  /* <View style={styles.resultContainer}>*/
+  /* {generateTableRow(firstResultRow[0])}
+  {results.map(generateTableRow)} */
+  /* {generateTableRow(firstResultRow[0])} */
+
   const ResultScreen = () => {
-    console.log(results)
     return (
       <View>
-      {/* <View style={styles.resultContainer}>*/}
-        {/* {generateTableRow(firstResultRow[0])}
-        {results.map(generateTableRow)} */}
-        {/* {generateTableRow(firstResultRow[0])} */}
+        {isLoadingResults ? <ActivityIndicator/> : (
         <FlatList
           data={results}
           renderItem={renderItem}
-          keyExtractor={(item) => item.nick+' '+item.date+' '+item.score+' '+item.type+Math.floor(Math.random() * (9999 - 0))}
+          keyExtractor={(item) => item.id}
           refreshing={refreshing}
           onRefresh={onRefresh}
         />
+        )}
       {/* </View>*/}
       </View>
     )
@@ -450,7 +397,7 @@ const App = () => {
           style={styles.navItemContainer}
           onPress={() => {
             // Navigate using the `navigation` prop that you received
-            props.navigation.navigate(props.screenName, {testId: props.testId});
+            props.navigation.navigate(props.screenName, {testId: props.testId, navigation: props.navigation, route: props.route, nick: props.nick, tags: props.tags});
           }}
         >
           <Text style={styles.navItem}>{props.screenNameUI}</Text>
@@ -469,14 +416,40 @@ const App = () => {
     )
   }
 
+  const NavigationTestList = (navigation, route) => {
+    const testListLength = testList.length
+    return testList.map( function(testElment, index) {
+      if( index >= testListLength -1){
+        return (
+          <NavigationItem key={testElment.id} screenName="Test" screenNameUI={testElment.name} navigation={navigation} route={route} testId={testElment.id}/>
+        );
+      } else {
+        return (
+          <View key={"con1-"+testElment.id}>
+            <NavigationItem key={testElment.id} 
+              screenName="Test" 
+              screenNameUI={testElment.name} 
+              navigation={navigation} 
+              route={route} 
+              testId={testElment.id}
+              tags={generateTagsString(testElment.tags)}/>
+            <View key={testElment.id+"-1"} style={[{borderBottomWidth: 1, borderColor: "#000000", borderStyle: 'dashed', margin: 5}]}/>
+          </View>
+        );
+      }
+    })
+  }
+
   const CustomDrawerContent = ({ navigation, route }) => {
     return (
       <View>
         <NavigationItem screenName="Home" screenNameUI="Home" navigation={navigation} route={route}/>
         <NavigationItem screenName="Results" screenNameUI="Results" navigation={navigation} route={route}/>
         <View style={[{borderBottomWidth: 2, borderColor: "#000000", margin: 10}]}/>
-        <NavigationItem screenName="Test-1" screenNameUI="Test 1" navigation={navigation} route={route} testId={21}/>
-        <NavigationItem screenName="Test 2" screenNameUI="Results" navigation={navigation} route={route}/>
+        {/* <NavigationItem screenName="Test" screenNameUI="Test 1" navigation={navigation} route={route} testId={21}/> */}
+        {/* <NavigationItem screenName="Test 2" screenNameUI="Results" navigation={navigation} route={route}/> */}
+        {NavigationTestList(navigation, route)}
+        <View style={[{borderBottomWidth: 2, borderColor: "#000000", margin: 10}]}/>
         <NavigationButton screenNameUI="Terms of Usage"/>
       </View>
     );
@@ -486,11 +459,13 @@ const App = () => {
 
   if ( canIskipTermsOfUsage ) {
     return (
-      <NavigationContainer onReady={() =>  RNBootSplash.hide({ fade: true })}>
+      <NavigationContainer onReady={() => RNBootSplash.hide({ fade: true })}>
         {/* <Stack.Navigator>
           <Stack.Screen name="Home" component={HomeScreen} />
         </Stack.Navigator> */}
         <Drawer.Navigator initialRouteName="Home"
+          backBehavior="initialRoute"
+          detachInactiveScreens="false"
           drawerContent={(props) => <CustomDrawerContent {...props} />}>
           <Drawer.Screen
             name="Home"
@@ -503,9 +478,9 @@ const App = () => {
             options={({ navigation, route }) => ({ResultScreen})}
           />
           <Drawer.Screen
-            name="Test-1"
+            name="Test"
             component={TestScreen}
-            options={({ navigation, route }) => ({TestScreen})}
+            options={({ navigation, route }) => ({TestScreen}), {unmountOnBlur:true}}
           />
         </Drawer.Navigator>
       </NavigationContainer>
@@ -605,6 +580,7 @@ const styles = StyleSheet.create({
   navItem: {
     margin: 10,
     fontSize: 26,
+    textAlign: 'center',
   },
   termsConatainer: {
     flex: 1,
